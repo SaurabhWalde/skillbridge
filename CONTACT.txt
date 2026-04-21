@@ -1,0 +1,14 @@
+═══════════════════════════════════════════════════════
+ SkillBridge Attendance API — Contact Information
+═══════════════════════════════════════════════════════
+
+Full Name:  Saurabh Walde
+Email:      saurabhwalde722@gmail.com
+Phone:      7218381560
+GitHub:     https://github.com/SaurabhWalde
+
+Most Challenging Part:
+Implementing the dual-token JWT system for the Monitoring Officer role was the most challenging aspect. 
+Designing the flow where a standard JWT is first obtained via login, 
+then exchanged along with an API key for a short-lived scoped monitoring token required careful thought around token validation, 
+scope enforcement, expiry management, and ensuring the monitoring endpoint only accepts the scoped token while rejecting standard JWTs.
