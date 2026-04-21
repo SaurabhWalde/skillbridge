@@ -1,3 +1,5 @@
+
+
 ```markdown
 # SkillBridge Attendance API
 
@@ -6,16 +8,16 @@ REST API for a state-level skilling programme attendance system with role-based 
 ## 1. Live API Base URL
 
 ```
-https://skillbridge-api.onrender.com
+https://skillbridge-api-ytmp.onrender.com
 ```
 
-- Swagger Docs: https://skillbridge-api.onrender.com/docs
-- Health Check: https://skillbridge-api.onrender.com/health
+- Swagger Docs: https://skillbridge-api-ytmp.onrender.com/docs
+- Health Check: https://skillbridge-api-ytmp.onrender.com/health
 - Hosted on **Render** (free tier, cold start ~30s). Database on **Neon** (free PostgreSQL). No credentials in repo.
 
 ```bash
 # Working curl against live deployment
-curl -X POST https://skillbridge-api.onrender.com/auth/login \
+curl -X POST https://skillbridge-api-ytmp.onrender.com/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"trainer1@test.com","password":"password123"}'
 ```
@@ -57,69 +59,69 @@ All passwords: `password123`
 | Programme Manager | `pm@test.com` | All summaries |
 | Monitoring Officer | `monitor@test.com` | Read-only (dual token) |
 
-**Monitoring API Key**: `monitor_secret_key_2024` (or check seed output for actual value)
+**Monitoring API Key**: Value shown in seed output (set via `MONITORING_API_KEY` in `.env`)
 
 ## 4. Curl Commands for Every Endpoint
 
-Replace `$TOKEN` with the `access_token` from login response.
+Replace `$TOKEN` with the `access_token` from login response. All examples use the live deployment URL.
 
 ```bash
 # ── AUTH ──
 
 # Signup
-curl -X POST http://localhost:8000/auth/signup \
+curl -X POST https://skillbridge-api-ytmp.onrender.com/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"name":"New User","email":"new@test.com","password":"pass123","role":"student","institution_id":1}'
 
 # Login
-curl -X POST http://localhost:8000/auth/login \
+curl -X POST https://skillbridge-api-ytmp.onrender.com/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"trainer1@test.com","password":"password123"}'
 
-# Monitoring token (requires standard JWT in header + API key in body)
-curl -X POST http://localhost:8000/auth/monitoring-token \
+# Monitoring token (Step 1: login as MO first, Step 2: use that JWT below)
+curl -X POST https://skillbridge-api-ytmp.onrender.com/auth/monitoring-token \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $MO_STANDARD_JWT" \
-  -d '{"key":"monitor_secret_key_2024"}'
+  -d '{"key":"your_monitoring_api_key"}'
 
 # ── BATCHES ──
 
 # Create batch (Trainer/Institution)
-curl -X POST http://localhost:8000/batches/ \
+curl -X POST https://skillbridge-api-ytmp.onrender.com/batches/ \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"name":"New Batch","institution_id":1}'
 
 # Generate invite (Trainer)
-curl -X POST http://localhost:8000/batches/1/invite \
+curl -X POST https://skillbridge-api-ytmp.onrender.com/batches/1/invite \
   -H "Authorization: Bearer $TOKEN"
 
 # Join batch (Student)
-curl -X POST http://localhost:8000/batches/join \
+curl -X POST https://skillbridge-api-ytmp.onrender.com/batches/join \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $STUDENT_TOKEN" \
   -d '{"token":"invite-uuid-here"}'
 
 # Batch summary (Institution/PM/Trainer)
-curl -X GET http://localhost:8000/batches/1/summary \
+curl -X GET https://skillbridge-api-ytmp.onrender.com/batches/1/summary \
   -H "Authorization: Bearer $TOKEN"
 
 # ── SESSIONS ──
 
 # Create session (Trainer)
-curl -X POST http://localhost:8000/sessions/ \
+curl -X POST https://skillbridge-api-ytmp.onrender.com/sessions/ \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $TOKEN" \
   -d '{"batch_id":1,"title":"Python Basics","date":"2025-01-15","start_time":"09:00:00","end_time":"11:00:00"}'
 
 # Session attendance (Trainer/Institution/PM)
-curl -X GET http://localhost:8000/sessions/1/attendance \
+curl -X GET https://skillbridge-api-ytmp.onrender.com/sessions/1/attendance \
   -H "Authorization: Bearer $TOKEN"
 
 # ── ATTENDANCE ──
 
 # Mark attendance (Student)
-curl -X POST http://localhost:8000/attendance/mark \
+curl -X POST https://skillbridge-api-ytmp.onrender.com/attendance/mark \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $STUDENT_TOKEN" \
   -d '{"session_id":1,"status":"present"}'
@@ -127,23 +129,23 @@ curl -X POST http://localhost:8000/attendance/mark \
 # ── SUMMARIES ──
 
 # Institution summary (PM/Institution)
-curl -X GET http://localhost:8000/institutions/1/summary \
+curl -X GET https://skillbridge-api-ytmp.onrender.com/institutions/1/summary \
   -H "Authorization: Bearer $PM_TOKEN"
 
 # Programme summary (PM only)
-curl -X GET http://localhost:8000/programme/summary \
+curl -X GET https://skillbridge-api-ytmp.onrender.com/programme/summary \
   -H "Authorization: Bearer $PM_TOKEN"
 
 # ── MONITORING (dual token flow) ──
 
 # Step 1: Login as MO → get standard JWT
-# Step 2: POST /auth/monitoring-token with JWT + API key → get scoped token
+# Step 2: POST /auth/monitoring-token with JWT + API key → get scoped token (1hr)
 # Step 3: Use scoped token below
-curl -X GET "http://localhost:8000/monitoring/attendance?batch_id=1&limit=10" \
+curl -X GET "https://skillbridge-api-ytmp.onrender.com/monitoring/attendance?batch_id=1&limit=10" \
   -H "Authorization: Bearer $SCOPED_TOKEN"
 
 # POST returns 405 (read-only)
-curl -X POST http://localhost:8000/monitoring/attendance
+curl -X POST https://skillbridge-api-ytmp.onrender.com/monitoring/attendance
 ```
 
 ## 5. Schema Decisions
@@ -218,7 +220,7 @@ skillbridge/
 ├── src/
 │   ├── config.py            # Centralized env vars
 │   ├── database.py          # SQLAlchemy engine + session
-│   ├── models.py            # 7 tables (users, batches, batch_trainers, batch_students, batch_invites, sessions, attendance)
+│   ├── models.py            # 7 tables
 │   ├── schemas.py           # Pydantic validation schemas
 │   ├── auth.py              # JWT + bcrypt + RBAC
 │   ├── main.py              # FastAPI app + router registration
@@ -248,5 +250,3 @@ skillbridge/
 | Testing | pytest + httpx |
 | Deployment | Render |
 ```
-
-This covers all 7 required sections from Task 5 + JWT docs + security analysis — concise and complete! 🚀

@@ -43,7 +43,8 @@ app.include_router(programme.router)
 app.include_router(monitoring.router)
 
 
-@app.get("/", tags=["Health"])
+# ── Root Endpoint (supports GET + HEAD for Render health check) ──
+@app.api_route("/", methods=["GET", "HEAD"], tags=["Health"])
 def root():
     return {
         "message": f"{settings.APP_NAME} is running",
@@ -52,7 +53,8 @@ def root():
     }
 
 
-@app.get("/health", tags=["Health"])
+# ── Health Check (supports GET + HEAD) ──
+@app.api_route("/health", methods=["GET", "HEAD"], tags=["Health"])
 def health_check():
     db_status = "unknown"
     try:
